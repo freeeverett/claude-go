@@ -1,4 +1,4 @@
-package claude_go
+package claude
 
 type Client struct {
 	apiKey string

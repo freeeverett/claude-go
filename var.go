@@ -1,4 +1,4 @@
-package claude_go
+package claude
 
 // https://docs.anthropic.com/claude/reference/getting-started-with-the-api
 

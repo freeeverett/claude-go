@@ -1,4 +1,4 @@
-package claude_go
+package claude
 
 import (
 	"bufio"

@@ -17,7 +17,7 @@
 ### Usage
 
 ```shell
-    $ go get github.com/freeeverett/claude-go
+$ go get github.com/freeeverett/claude-go
 ```
 ### Simple Example
 ```go
@@ -25,7 +25,7 @@ package main
 
 import (
 	"fmt"
-	claude "github.com/freeeverett/claude-go"
+	"github.com/freeeverett/claude-go"
 )
 
 func main() {
