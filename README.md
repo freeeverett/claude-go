@@ -3,9 +3,6 @@
 <p align="center">
         <a href="https://github.com/freeeverett/anthropic-sdk-go/master/LICENSE"><img src="https://img.shields.io/github/license/freeeverett/claude-go?style=flat-square" alt="MIT"></a>
         <a href="#"><img src="https://img.shields.io/github/go-mod/go-version/freeeverett/claude-go?label=Go%20Version&style=flat-square" alt="Go Version"></a>
-        <a href="https://github.com/freeeverett/claude-go/stargazers"><img src="https://img.shields.io/github/stars/freeeverett/claude-go?label=Stars&style=flat-square" alt="GitHub Repo stars"></a>
-        <a href="#"><img src="https://img.shields.io/github/repo-size/freeeverett/claude-go?style=flat-square" alt="GitHub repo size"></a>
-        <a href="#"><img src="https://img.shields.io/github/commit-activity/m/freeeverett/claude-go?style=flat-square" alt="GitHub commit activity"></a>
     </p>
 <p align="center">Golang SDK for AnthRopic Claude AI</p>
 
