@@ -3,7 +3,7 @@ package claude
 // https://docs.anthropic.com/claude/reference/getting-started-with-the-api
 
 type Message struct {
-	Role    role   `json:"role"`
+	Role    Role   `json:"role"`
 	Content string `json:"content"`
 }
 
@@ -17,8 +17,10 @@ type MessageContent struct {
 	Text string `json:"text"`
 }
 
+type Model string
+
 type RequestMessageContent struct {
-	Model       model      `json:"model"`
+	Model       Model      `json:"model"`
 	MaxTokens   int64      `json:"max_tokens"`
 	Messages    []*Message `json:"messages"`
 	System      string     `json:"system,omitempty"` // system prompt
@@ -36,7 +38,7 @@ type ResponseMessageContent struct {
 		Text string `json:"text"`
 		Type string `json:"type"` // only support text
 	} `json:"content"`
-	Model        model   `json:"model"`
+	Model        Model   `json:"model"`
 	StopReason   *string `json:"stop_reason"` // [end_turn|max_tokens|stop_sequence]
 	StopSequence *string `json:"stop_sequence"`
 	Usage        struct {
