@@ -17,7 +17,7 @@
 ### Usage
 
 ```shell
- go get github.com/freeeverett/claude-go
+ go get github.com/freeeverett/claude-go@v0.0.1
 ```
 ### Simple Example
 ```go
