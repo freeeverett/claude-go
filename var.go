@@ -2,22 +2,29 @@ package claude
 
 // https://docs.anthropic.com/claude/reference/getting-started-with-the-api
 
+type Client struct {
+	apiKey string
+	domain string
+}
+
+type Model string
+
+type Role string
+
 type Message struct {
 	Role    Role   `json:"role"`
 	Content string `json:"content"`
 }
 
 type MessageContent struct {
-	Type   string `json:"type"` // image //
+	Type   string `json:"type"` // image / text
 	Source struct {
 		Type      string `json:"type"`       // base64
 		MediaType string `json:"media_type"` // image/png, image/jpeg, image/gif, image/webp
-		Data      string `json:"data"`
+		Data      string `json:"data"`       // base64 encoded image data
 	} `json:"source"`
-	Text string `json:"text"`
+	Text string `json:"text"` // text content
 }
-
-type Model string
 
 type RequestMessageContent struct {
 	Model       Model      `json:"model"`

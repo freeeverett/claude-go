@@ -3,6 +3,7 @@ package claude
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 func New(apiKey string) *Client {
 	return &Client{
 		apiKey: apiKey,
-		domain: "https://api.anthropic.com/",
+		domain: DefaultDomain,
 	}
 }
 
@@ -21,7 +22,7 @@ func (c *Client) SetDomain(domain string) {
 	c.domain = domain
 }
 
-func (c *Client) CreateMessage(in *RequestMessageContent) (*ResponseMessageContent, error) {
+func (c *Client) CreateMessage(ctx context.Context, in *RequestMessageContent) (*ResponseMessageContent, error) {
 	if in == nil {
 		return nil, errors.New("input is nil")
 	}
@@ -35,29 +36,35 @@ func (c *Client) CreateMessage(in *RequestMessageContent) (*ResponseMessageConte
 	in.Stream = false
 
 	req.Header.Set("x-api-key", c.apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("anthropic-version", anthropicVersion)
 	req.Header.Set("content-type", "application/json")
 
+	select {
+	case <-ctx.Done():
+		return nil, errors.New("context is done")
+	default:
+	}
 	r, errDo := cli.Do(req)
 	if errDo != nil {
 		return nil, errDo
 	}
 	if r.StatusCode != 200 {
-		var errRes = ResponseError{}
-		_ = json.NewDecoder(r.Body).Decode(&errRes)
-		errRes.Code = r.StatusCode
-		return nil, &errRes
+		var errResult = ResponseError{}
+		_ = json.NewDecoder(r.Body).Decode(&errResult)
+		errResult.Code = r.StatusCode
+		return nil, &errResult
 	}
 	var res ResponseMessageContent
 	return &res, json.NewDecoder(r.Body).Decode(&res)
 }
-func (c *Client) CreateSimpleMessage(text string) (string, error) {
+
+func (c *Client) CreateSimpleMessage(ctx context.Context, text string) (string, error) {
 	if text == "" {
 		return "", errors.New("text is empty")
 	}
-	r, err := c.CreateMessage(&RequestMessageContent{
-		Model:     ModelClaude3Sonnet20240229,
-		MaxTokens: 4096,
+	r, err := c.CreateMessage(ctx, &RequestMessageContent{
+		Model:     DefaultModel,
+		MaxTokens: DefaultMaxTokens,
 		Messages: []*Message{
 			{
 				Role:    RoleUser,
@@ -73,7 +80,8 @@ func (c *Client) CreateSimpleMessage(text string) (string, error) {
 	}
 	return "", errors.New("text is empty")
 }
-func (c *Client) CreateMessageStream(in *RequestMessageContent) (<-chan ResponseMessageStream, error) {
+
+func (c *Client) CreateMessageStream(ctx context.Context, in *RequestMessageContent) (<-chan ResponseMessageStream, error) {
 	if in == nil {
 		return nil, errors.New("input is nil")
 	}
@@ -88,7 +96,7 @@ func (c *Client) CreateMessageStream(in *RequestMessageContent) (<-chan Response
 		return nil, err
 	}
 	req.Header.Set("x-api-key", c.apiKey)
-	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("anthropic-version", anthropicVersion)
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("anthropic-beta", "messages-2023-12-15")
 
@@ -96,11 +104,11 @@ func (c *Client) CreateMessageStream(in *RequestMessageContent) (<-chan Response
 	if errDo != nil {
 		return nil, errDo
 	}
-	if r.StatusCode != 200 {
-		var errRes = ResponseError{}
-		_ = json.NewDecoder(r.Body).Decode(&errRes)
-		errRes.Code = r.StatusCode
-		return nil, &errRes
+	if r.StatusCode != http.StatusOK {
+		var errResult = ResponseError{}
+		_ = json.NewDecoder(r.Body).Decode(&errResult)
+		errResult.Code = r.StatusCode
+		return nil, &errResult
 	}
 	reader := bufio.NewReader(r.Body)
 	//
@@ -108,22 +116,26 @@ func (c *Client) CreateMessageStream(in *RequestMessageContent) (<-chan Response
 	go func() {
 		defer close(ch)
 		for {
-			line, err1 := reader.ReadBytes('\n')
-			if err1 != nil {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
 				break
 			}
 			if len(line) > 6 && string(line[:5]) == "data:" {
-				data := string(line[6:])
 				var res ResponseMessageStream
-				_ = json.Unmarshal([]byte(data), &res)
+				_ = json.Unmarshal(line[6:], &res)
 				ch <- res
 			}
-			//
 		}
 	}()
 	return ch, nil
 }
-func (c *Client) CreateSimpleMessageStream(text string) (<-chan string, error) {
+
+func (c *Client) CreateSimpleMessageStream(ctx context.Context, text string) (<-chan string, error) {
 	if text == "" {
 		return nil, errors.New("text is empty")
 	}
@@ -131,9 +143,9 @@ func (c *Client) CreateSimpleMessageStream(text string) (<-chan string, error) {
 	r := make(<-chan ResponseMessageStream)
 
 	var err error
-	r, err = c.CreateMessageStream(&RequestMessageContent{
-		Model:     ModelClaude3Sonnet20240229,
-		MaxTokens: 4096,
+	r, err = c.CreateMessageStream(ctx, &RequestMessageContent{
+		Model:     DefaultModel,
+		MaxTokens: DefaultMaxTokens,
 		Messages: []*Message{
 			{
 				Role:    RoleUser,
@@ -147,8 +159,8 @@ func (c *Client) CreateSimpleMessageStream(text string) (<-chan string, error) {
 	ch := make(chan string)
 	go func() {
 		defer close(ch)
-		for {
-			exit := false
+		var completed bool
+		for completed == false {
 			select {
 			case rr, ok := <-r:
 				if ok {
@@ -156,13 +168,10 @@ func (c *Client) CreateSimpleMessageStream(text string) (<-chan string, error) {
 						ch <- rr.Delta.Text
 					}
 				} else {
-					exit = true
+					completed = true
 				}
 			case <-time.After(time.Second * 30): // 30s timeout
-				exit = true
-			}
-			if exit {
-				break
+				completed = true
 			}
 		}
 	}()
