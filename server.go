@@ -120,15 +120,15 @@ func (c *Client) CreateMessageStream(ctx context.Context, in *RequestMessageCont
 			case <-ctx.Done():
 				return
 			default:
-			}
-			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				break
-			}
-			if len(line) > 6 && string(line[:5]) == "data:" {
-				var res ResponseMessageStream
-				_ = json.Unmarshal(line[6:], &res)
-				ch <- res
+				line, err := reader.ReadBytes('\n')
+				if err != nil {
+					return
+				}
+				if len(line) > 6 && string(line[:5]) == "data:" {
+					var res ResponseMessageStream
+					_ = json.Unmarshal(line[6:], &res)
+					ch <- res
+				}
 			}
 		}
 	}()
