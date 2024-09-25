@@ -8,9 +8,10 @@ const (
 //
 
 const (
-	Opus20240229   Model = "claude-3-opus-20240229"
-	Sonnet20240229 Model = "claude-3-sonnet-20240229"
-	Haiku20240307  Model = "claude-3-haiku-20240307"
+	Opus20240229     Model = "claude-3-opus-20240229"
+	Sonnet20240229   Model = "claude-3-sonnet-20240229"
+	Haiku20240307    Model = "claude-3-haiku-20240307"
+	Sonnet3520240620 Model = "claude-3-5-sonnet-20240620"
 )
 
 const (
